@@ -129,70 +129,54 @@ class KnowledgeBase(object):
         ####################################################
         # Student code goes here
 
-        # Asserted facts and rules do not have support - retract
-        # Asserted facts and rules that have support -> unassert it
-        # Inferred facts abd rules that do not have support -> shouldn't exist, retract
-        # Inferred facts abd rules that have support -> Do nothing
+        print("retract  : ", fact_rule)
+        kb_item = None
 
-        # every fact/rule retracted fact/rule supports
-            # adjust supported by list
-            # if it's no longer supported remove
-
-        print("Retract Fact/Rule: ", fact_rule)
-
+        # Find which type of knowledge base item is the input - rule/fact
         if isinstance(fact_rule, Fact):
             fact_rule = self._get_fact(fact_rule)
-
-            # asserted facts that do not have support, simply retract.
-            if fact_rule.asserted and (len(fact_rule.supported_by) == 0):
-                self.facts.remove(fact_rule)
-
-            # asserted facts that have support, unassert.
-            elif fact_rule.asserted and (len(fact_rule.supported_by) > 0):
-                fact_rule.asserted = False
-                return
-
-            # Inferred facts that do not have support, shouldn't exist, retract.
-            elif not fact_rule.asserted and (len(fact_rule.supported_by) == 0):
-                self.facts.remove(fact_rule)
-
-            # Inferred facts that have support, do nothing, return.
-            else:
-                return
-
+            kb_item = self.facts
         elif isinstance(fact_rule, Rule):
             fact_rule = self._get_rule(fact_rule)
+            kb_item = self.rules
+        else:
+            print('Not a valid KB item type')
+            return
 
-            # asserted rules that do not have support, simply retract.
-            if fact_rule.asserted and (len(fact_rule.supported_by) == 0):
-                self.rules.remove(fact_rule)
+        # asserted facts/rules that do not have support, simply retract.
+        if fact_rule.asserted and not fact_rule.supported_by:
+            kb_item.remove(fact_rule)
 
-            # asserted rules that have support, unassert.
-            elif fact_rule.asserted and (len(fact_rule.supported_by) > 0):
-                fact_rule.asserted = False
-                return
+        # asserted facts/rules that have support, unassert.
+        elif fact_rule.asserted and fact_rule.supported_by:
+            fact_rule.asserted = False
+            return
 
-            # Inferred rules that do not have support, shouldn't exist, retract.
-            elif not fact_rule.asserted and (len(fact_rule.supported_by) == 0):
-                self.rules.remove(fact_rule)
+        # Inferred facts/rules that do not have support shouldn't exist, retract.
+        elif not fact_rule.asserted and not fact_rule.supported_by:
+            kb_item.remove(fact_rule)
 
-            # Inferred rules that have support, do nothing, return.
-            else:
-                return
+        # Inferred facts/rules that have support, do nothing, return.
+        else:
+            print('Item is an inferred fact/rule. No action')
+            return
 
-
+        # every fact the retracted fact/rule supports, adjust supported by list.
+        # If it's no longer supported, remove.
         for fact in fact_rule.supports_facts:
             for fr in fact.supported_by:
-                if fr[0] == fact_rule:
+                if fact_rule in fr:
                     fact.supported_by.remove(fr)
-            if len(fact.supported_by) == 0 and not fact.asserted:
+            if not fact.supported_by and not fact.asserted:
                 self.kb_retract(fact)
 
+        # every rule the retracted fact/rule supports, adjust supported by list.
+        # If it's no longer supported, remove.
         for rule in fact_rule.supports_rules:
             for fr in rule.supported_by:
-                if (fr[1] == fact_rule):
+                if fact_rule in fr:
                     rule.supported_by.remove(fr)
-            if len(rule.supported_by) == 0 and not rule.asserted:
+            if not rule.supported_by and not rule.asserted:
                 self.kb_retract(rule)
 
 
@@ -213,72 +197,63 @@ class InferenceEngine(object):
         ####################################################
         # Student code goes here
 
-        # If rule, match only first element of lhs with fact
-        # If fact, examine each rule and check the first element of its LHS against new fact.
-
-        # Use the util.match function to do unification and create possible bindings
-        # Use the util.instantiate function to bind a variable in the rest of a rule
-        # Rules and Facts have fields for supported_by, supports_facts, and supports_rules.
-            # For example, imagine that a fact F and rule R matched to infer a new fact/rule fr.
-            # fr is supported by F and R. Add them to fr's supported_by list - you can do this by passing them as a constructor argument when creating fr.
-            # F and R now support fr. Add fr to the supports_rules and supports_facts lists (as appropriate) in F and R.
-
-
-        #input
-        print("in fc_infer")
+        # analyze inputs
+        print("fc_infer")
         print("input fact: ", fact)
         print("input rule: ", rule)
 
-        # match for possible bindings
+        # If there are no lhs or rhs to the rule, return
+        if not rule.lhs or not rule.rhs:
+            return None
+
+        # match to do unification and create possible bindings
         bindings = match(fact.statement, rule.lhs[0])
         print("bindings: ", bindings)
 
-        # If no bindings, return.
+        # If no bindings available, return.
         if not bindings:
             return None
 
         else:
-            item = instantiate(rule.rhs, bindings)
-            print("item: ", item)
+            # Bind variables in the rest of the rule
+            bound_item = instantiate(rule.rhs, bindings)
+            print("Bound item: ", bound_item)
 
-            #TODO removeeeeeeeeeeeeeeee
-            index_f = kb.facts.index(fact)
-            index_r = kb.rules.index(rule)
-            print("index_f")
-            print(index_f)
-            print("index_r")
-            print(index_r)
+            no_of_facts = len(kb.facts)
+            no_of_rules = len(kb.rules)
+            print("Number of facts: ", no_of_facts)
+            print("Number of rules: ", no_of_rules)
 
-
-            # If only one lhs, we can infer a fact
+            # If there is only one lhs in the rule, we can infer a fact
             if len(rule.lhs) == 1:
-                print('infer fact not in KB using item')
-                infer_fact = Fact(item, [[rule, fact]])
+                print('Infer a fact from bindings and rhs of the rule')
+                infer_fact = Fact(bound_item, [[rule, fact]])
 
-                # add the inferred fact to the KB
+                # add the inferred fact to the KB, asserted false
                 kb.kb_assert(infer_fact)
 
-                # add the inferred fact to the rule's supported fact
+                # add the inferred fact to the rule's supported facts list
                 rule.supports_facts.append(infer_fact)
 
-                # add the inferred fact to the fact's supported fact
+                # add the inferred fact to the fact's supported facts list
                 fact.supports_facts.append(infer_fact)
 
-                print('added fact to the kb: ', infer_fact)
+                print('Added fact to the kb: ', infer_fact)
 
-            # More than one lhs, we can infer rule
+            # If rule has more than one lhs, we might infer more rules/ simplify rules in KB.
             else:
-                print('infer rule not in KB using item')
+                print('Infer rules from in bindings and rhs of the rule')
                 infer_rules = []
                 for r in rule.lhs[1:]:
-                    # instantiate the remaining LHS with the binding
-                    infer_rules.append(instantiate(r, bindings))
+                    # Bind variables with the remaining LHS of the rule
+                    bound_r = instantiate(r, bindings)
+                    infer_rules.append(bound_r)
 
                 print('infer rules list', infer_rules)
-                # create new rule
-                infer_rule = Rule([infer_rules, item], [[rule, fact]])
+                # Infer new rule from binding variables
+                infer_rule = Rule([infer_rules, bound_item], [[rule, fact]])
 
-                # add the inferred rule to the KB
+                # add the inferred rule to the KB, asserted false
                 kb.kb_assert(infer_rule)
 
                 # add the inferred rule to the rule's supported rules
@@ -287,5 +262,5 @@ class InferenceEngine(object):
                 # add the inferred fact to the fact's supported rules
                 fact.supports_rules.append(infer_rule)
 
-                print('added fact to the kb: ', infer_rule)
+                print('Added rule to the kb: ', infer_rule)
 

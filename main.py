@@ -12,6 +12,9 @@ class KBTest(unittest.TestCase):
         data = read.read_tokenize(file)
         self.KB = KnowledgeBase([], [])
         for item in data:
+            #TODO removeeeeeeee
+            print("item: ", item)
+
             if isinstance(item, Fact) or isinstance(item, Rule):
                 self.KB.kb_assert(item)
 
@@ -179,9 +182,11 @@ class KBTest(unittest.TestCase):
         KB.kb_assert(rule1)
         KB.kb_assert(rule2)
         KB.kb_assert(fact3)
-        
+
+
         answer1 = KB.kb_ask(ask1)
         answer2 = KB.kb_ask(ask2)
+
         KB.kb_retract(fact1)
         answer3 = ask3 in KB.rules
         answer4 = KB.kb_ask(ask1)
