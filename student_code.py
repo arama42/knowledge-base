@@ -232,11 +232,11 @@ class InferenceEngine(object):
                 # add the inferred fact to the KB, asserted false
                 kb.kb_assert(infer_fact)
 
-                # add the inferred fact to the rule's supported facts list
-                rule.supports_facts.append(infer_fact)
-
                 # add the inferred fact to the fact's supported facts list
                 fact.supports_facts.append(infer_fact)
+
+                # add the inferred fact to the rule's supported facts list
+                rule.supports_facts.append(infer_fact)
 
                 print('Added fact to the kb: ', infer_fact)
 
@@ -256,11 +256,11 @@ class InferenceEngine(object):
                 # add the inferred rule to the KB, asserted false
                 kb.kb_assert(infer_rule)
 
-                # add the inferred rule to the rule's supported rules
-                rule.supports_rules.append(infer_rule)
-
                 # add the inferred fact to the fact's supported rules
                 fact.supports_rules.append(infer_rule)
+
+                # add the inferred rule to the rule's supported rules
+                rule.supports_rules.append(infer_rule)
 
                 print('Added rule to the kb: ', infer_rule)
 
